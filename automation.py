@@ -12,8 +12,8 @@ from selenium.webdriver.common.by import By
 from dotenv import load_dotenv
 from os import getenv
 
-PAUSE_DUR_S__LONG = 1
-PAUSE_DUR_S__SHORT = 0.5
+PAUSE_DUR_S__LONG = 0.5
+PAUSE_DUR_S__SHORT = 0.25
 
 # setup
 load_dotenv()
@@ -58,6 +58,10 @@ def try_find_it_til_it_exists(parent, css_selector: str, found_element_index: in
     return ret
 
 
+def js_click(arg0):
+    driver.execute_script("arguments[0].click();", arg0)
+
+
 dialog_scroll_list = driver.find_element(
     By.CSS_SELECTOR,
     ".q-flex.modal_content_inner > div > div.qu-flexDirection--column.qu-overflowY--auto > div > div.qu-overflowY--auto",
@@ -65,6 +69,8 @@ dialog_scroll_list = driver.find_element(
 
 queue_spaces = []
 n_passed = 0
+n_tries_get_new_loaded_spaces = 0
+N_TRIES_GET_NEW_LOADED_SPACES_TIL_QUIT = 5
 while True:
     queue_spaces.extend(
         dialog_scroll_list.find_elements(
@@ -73,7 +79,13 @@ while True:
         )[n_passed:]
     )
     if len(queue_spaces) == 0:  # no new spaces loaded since scrolldown
-        break
+        n_tries_get_new_loaded_spaces += 1
+        if n_tries_get_new_loaded_spaces < N_TRIES_GET_NEW_LOADED_SPACES_TIL_QUIT:
+            sleep(PAUSE_DUR_S__LONG)
+            continue
+        else:
+            break
+    n_tries_get_new_loaded_spaces = 0
 
     while len(queue_spaces):
         space = queue_spaces.pop(0)
@@ -90,7 +102,7 @@ while True:
 
         # disables emails
         radio__off = try_find_it_til_it_exists(driver, "input[type='radio']", 2)
-        driver.execute_script("arguments[0].click();", radio__off)
+        js_click(radio__off)
         # radio__off.click()
         sleep(PAUSE_DUR_S__SHORT)
 
@@ -99,7 +111,7 @@ while True:
             By.CSS_SELECTOR,
             "button[aria-label='Dismiss']",
         )
-        driver.execute_script("arguments[0].click();", btn__dismiss_subdialog)
+        js_click(btn__dismiss_subdialog)
         # btn__dismiss_subdialog.click()
         sleep(PAUSE_DUR_S__SHORT)
 
